@@ -1,14 +1,5 @@
+import asyncio
 import pygame
-
-
-WINDOW = pygame.display.set_mode((1400, 900))
-CLOCK = pygame.time.Clock()
-GRID_SIZE = 10
-FPS_LIMIT = 1000
-
-GRID = set()
-CAMERA = [0, 0]
-ZOOM = 1
 
 
 def get_live_neighbors(grid, location):
@@ -115,54 +106,70 @@ def handle_mouse_buttons(event):
         camera_mouse_down = None
 
 
-camera_mouse_down = None
-running = False
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            quit()
+async def run():
+    global GRID, GRID_SIZE, CAMERA, ZOOM
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                running = not running
+    GRID_SIZE = 10
+    GRID = set()
+    CAMERA = [0, 0]
+    ZOOM = 1
 
-        if event.type == pygame.MOUSEWHEEL:
-            handle_zoom(event)
+    window = pygame.display.set_mode((1400, 900))
+    clock = pygame.time.Clock()
+    fps_limit = 1000
 
-        if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEMOTION, pygame.MOUSEBUTTONUP):
-            handle_mouse_buttons(event)
+    camera_mouse_down = None
+    running = False
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
 
-    pressed = pygame.key.get_pressed()
-    if pressed[pygame.K_LEFT] or pressed[pygame.K_a]:
-        CAMERA[0] += 5
-    if pressed[pygame.K_RIGHT] or pressed[pygame.K_d]:
-        CAMERA[0] -= 5
-    if pressed[pygame.K_UP] or pressed[pygame.K_w]:
-        CAMERA[1] += 5
-    if pressed[pygame.K_DOWN] or pressed[pygame.K_s]:
-        CAMERA[1] -= 5
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    running = not running
 
-    if camera_mouse_down:
-        mouse_pos = pygame.mouse.get_pos()
-        CAMERA = [
-            mouse_pos[0] - camera_mouse_down[0] * ZOOM,
-            mouse_pos[1] - camera_mouse_down[1] * ZOOM
-        ]
+            if event.type == pygame.MOUSEWHEEL:
+                handle_zoom(event)
 
-    if running:
-        GRID = iterate_life(GRID)
+            if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEMOTION, pygame.MOUSEBUTTONUP):
+                handle_mouse_buttons(event)
 
-    WINDOW.fill("white")
-    for square in GRID:
-        pygame.draw.rect(WINDOW, "black", (
-            square[0] * GRID_SIZE * ZOOM + CAMERA[0],
-            square[1] * GRID_SIZE * ZOOM + CAMERA[1],
-            GRID_SIZE * ZOOM,
-            GRID_SIZE * ZOOM))
+        pressed = pygame.key.get_pressed()
+        if pressed[pygame.K_LEFT] or pressed[pygame.K_a]:
+            CAMERA[0] += 5
+        if pressed[pygame.K_RIGHT] or pressed[pygame.K_d]:
+            CAMERA[0] -= 5
+        if pressed[pygame.K_UP] or pressed[pygame.K_w]:
+            CAMERA[1] += 5
+        if pressed[pygame.K_DOWN] or pressed[pygame.K_s]:
+            CAMERA[1] -= 5
 
-    CLOCK.tick(FPS_LIMIT)
-    pygame.display.flip()
+        if camera_mouse_down:
+            mouse_pos = pygame.mouse.get_pos()
+            CAMERA = [
+                mouse_pos[0] - camera_mouse_down[0] * ZOOM,
+                mouse_pos[1] - camera_mouse_down[1] * ZOOM
+            ]
 
-    fps = str(int(CLOCK.get_fps()))
-    pygame.display.set_caption(fps)
+        if running:
+            GRID = iterate_life(GRID)
+
+        window.fill("white")
+        for square in GRID:
+            pygame.draw.rect(window, "black", (
+                square[0] * GRID_SIZE * ZOOM + CAMERA[0],
+                square[1] * GRID_SIZE * ZOOM + CAMERA[1],
+                GRID_SIZE * ZOOM,
+                GRID_SIZE * ZOOM))
+
+        clock.tick(fps_limit)
+        pygame.display.flip()
+
+        fps = str(int(clock.get_fps()))
+        pygame.display.set_caption(fps)
+
+        await asyncio.sleep(0)  # Yield to web
+
+asyncio.run(run())
